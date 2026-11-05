@@ -12,7 +12,7 @@ N_REP = 20
 EPS = 0.05
 
 RESPONSES = {
-    "rho2": "завантаження резервного ρ2",
+    "rho_rez": "завантаження резервного ρ",
     "lam": "частота відмов λ_f, 1/с",
     "nint": "інтенсивність перерваних N_int/T, 1/с",
     "tx": "середній час передачі, с",
@@ -21,11 +21,11 @@ RESPONSES = {
 
 def snapshot(model, parts):
     t = model.tcurr
-    tx = parts["exit_main"].tx_times + parts["exit_backup"].tx_times
+    tx = parts["exit_osn"].tx_times + parts["exit_rez"].tx_times
     return {
-        "rho2": parts["backup"].busy_time / t,
-        "lam": parts["failure"].failures / t,
-        "nint": parts["route_b3"].passed / t,
+        "rho_rez": parts["smo"][4].busy_time / t,
+        "lam": parts["route_failure"].passed / t,
+        "nint": parts["route_interrupted"].passed / t,
         "tx": sum(tx) / len(tx),
     }
 
@@ -68,10 +68,10 @@ def transient_study(horizon=200000.0, step=500.0, seeds=(201, 202, 203, 204)):
 
 
 def replicate(n, seed0, t_mod=T_MOD, warmup=WARMUP):
-    out = {"rho2": [], "lam": [], "nint": [], "n_int": [], "tx": [], "sigma": []}
+    out = {"rho_rez": [], "lam": [], "nint": [], "n_int": [], "tx": [], "sigma": []}
     for k in range(n):
-        _, _, r = run(PARAMS, t_mod=t_mod, warmup=warmup, seed=seed0 + k)
-        out["rho2"].append(r["rho2"])
+        r, _ = run(PARAMS, t_mod=t_mod, warmup=warmup, seed=seed0 + k)
+        out["rho_rez"].append(r["rho_rez"])
         out["lam"].append(r["lam"])
         out["nint"].append(r["n_int"] / r["time"])
         out["n_int"].append(r["n_int"])
@@ -101,7 +101,7 @@ def confidence_interval(values, p=0.95):
 def baseline(n_rep=N_REP, seed0=1000):
     data = replicate(n_rep, seed0)
     rows = [
-        ("Завантаження резервного каналу ρ2", "rho2", 4),
+        ("Завантаження резервного каналу ρ", "rho_rez", 4),
         ("Частота відмов λ_f, збоїв/с", "lam", 5),
         (f"Число перерваних повідомлень за {T_MOD - WARMUP:.0f} с", "n_int", 1),
         ("Середній час передачі, с", "tx", 3),

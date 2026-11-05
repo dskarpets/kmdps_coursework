@@ -16,7 +16,7 @@ def sample_one(seed):
     t = 3500.0
     while True:
         model.simulate(t, print_result=False)
-        for d in (parts["exit_main"], parts["exit_backup"]):
+        for d in (parts["exit_osn"], parts["exit_rez"]):
             if TARGET_ID in d.ids:
                 k = d.ids.index(TARGET_ID)
                 return d.tx_times[k], d.interrupted[k]

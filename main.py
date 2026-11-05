@@ -1,41 +1,39 @@
 import random
-import statistics
+import statistics as st
+from network import build_model, PARAMS
 
-from network import PARAMS, build_model
 
-
-def collect_results(model, s):
+def collect_results(model, parts):
     t = model.observed_time()
-    tx = s["exit_main"].tx_times + s["exit_backup"].tx_times
+    tx = parts["exit_osn"].tx_times + parts["exit_rez"].tx_times
     return {
         "time": t,
-        "rho2": s["backup"].busy_time / t,
-        "rho1": s["main"].busy_time / t,
-        "failures": s["failure"].failures,
-        "lam": s["failure"].failures / t,
-        "n_int": s["route_b3"].passed,
+        "rho_rez": parts["smo"][4].busy_time / t,
+        "rho_osn": parts["smo"][2].busy_time / t,
+        "failures": parts["route_failure"].passed,
+        "lam": parts["route_failure"].passed / t,
+        "n_int": parts["route_interrupted"].passed,
         "delivered": len(tx),
-        "tx_mean": statistics.mean(tx),
-        "tx_std": statistics.stdev(tx),
+        "tx_mean": st.mean(tx),
+        "tx_std": st.stdev(tx),
     }
 
 
-def run(p=PARAMS, t_mod=100000.0, warmup=0.0, seed=None):
-    if seed is not None:
-        random.seed(seed)
+def run(p=PARAMS, t_mod=100000.0, warmup=0.0, seed=1):
+    random.seed(seed)
     model, parts = build_model(p)
     model.simulate(t_mod, warmup=warmup, print_result=False)
-    return model, parts, collect_results(model, parts)
+    return collect_results(model, parts), parts
 
 
 def print_report(r):
-    print(f"Час спостереження: {r['time']:.0f} с, передано повідомлень: {r['delivered']}")
-    print(f"Завантаження резервного каналу: {r['rho2']:.4f}")
-    print(f"Частота відмов: {r['lam']:.5f} збоїв/с (збоїв: {r['failures']})")
-    print(f"Перервано повідомлень: {r['n_int']}")
-    print(f"Час передачі: середнє {r['tx_mean']:.3f} с, σ {r['tx_std']:.3f} с")
+    print(f"Передано повідомлень: {r['delivered']}")
+    print(f"Завантаження резервного каналу: {r['rho_rez']:.4f}")
+    print(f"Збоїв: {r['failures']}, частота: {r['lam']:.5f} 1/с")
+    print(f"Перерваних повідомлень: {r['n_int']}")
+    print(f"Час передачі: середнє {r['tx_mean']:.3f}, σ {r['tx_std']:.3f}")
 
 
 if __name__ == "__main__":
-    _, _, result = run(t_mod=100000.0, seed=1)
-    print_report(result)
+    r, _ = run()
+    print_report(r)

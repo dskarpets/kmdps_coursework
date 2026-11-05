@@ -6,23 +6,17 @@ from verify import print_trace_examples, verification
 
 def main():
     print("Контрольний запуск (seed = 1, T_mod = 100000 с):")
-    print_report(run(t_mod=100000.0, seed=1)[2])
-
+    print_report(run(t_mod=100000.0, seed=1)[0])
     print("\nПротокол подій:")
     print_trace_examples()
-
     print()
     verification()
-
     print()
     transient_study()
-
     print()
     replication_study()
-
     print()
     baseline()
-
     print()
     identify()
 

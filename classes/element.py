@@ -5,12 +5,9 @@ class Element:
     def __init__(self, name=None):
         self.tcurr = 0.0
         self.tnext = float("inf")
-
         self.state = 0
         self.quantity = 0
-
         self.next_element = None
-
         self.id = Element._next_id
         Element._next_id += 1
         self.name = name if name else f"element{self.id}"

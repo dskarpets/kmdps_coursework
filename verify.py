@@ -44,18 +44,26 @@ def trace(seed, t_before, t_after):
         print(tm.lines[t])
 
 
-def print_trace_examples():
-    print("Збій під час передачі (! – перервано):")
-    trace(2, 3, 34)
-    for seed in range(1, 200):
+def find_seed(interrupted):
+    start = random.SystemRandom().randrange(10 ** 6)
+    for seed in range(start, start + 1000):
         random.seed(seed)
         model, parts = build_model()
         t_fail = parts["smo"][5].end[0]
         model.simulate(t_fail + 40, print_result=False)
-        if parts["route_interrupted"].passed == 0 and parts["exit_rez"].quantity >= 2:
-            break
-    print("\nЗбій у простої основного каналу:")
+        hit = parts["route_interrupted"].passed > 0
+        if hit == interrupted and (interrupted or parts["exit_rez"].quantity >= 2):
+            return seed
+
+
+def print_trace_examples():
+    seed = find_seed(True)
+    print(f"Збій під час передачі (! – перервано), seed = {seed}:")
+    trace(seed, 3, 34)
+    seed = find_seed(False)
+    print(f"\nЗбій у простої основного каналу, seed = {seed}:")
     trace(seed, 2, 34)
+    random.seed()
 
 
 SCENARIOS = [
@@ -69,7 +77,7 @@ SCENARIOS = [
 ]
 
 
-def run_scenario(changes, t_mod=200000.0, seed=11):
+def run_scenario(changes, t_mod=200000.0, seed=None):
     p = dict(PARAMS)
     p.update(changes)
     r, s = run(p, t_mod=t_mod, seed=seed)

@@ -35,6 +35,7 @@ def build_model(p=PARAMS):
     def end_time_smo4(smo, tr):
         tr.setdefault("t_start", smo.tcurr)
         return smo.tcurr + unif(*p["tx"])
+
     smo4.end_time = end_time_smo4
     smo4.delay = None
 

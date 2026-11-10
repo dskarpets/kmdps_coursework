@@ -1,17 +1,13 @@
 import os
-import random
-
 import numpy as np
 from scipy import stats
-
 from network import PARAMS, build_model
 
 TARGET_ID = 300
 GRID = 0.001
 
 
-def sample_one(seed):
-    random.seed(seed)
+def sample_one():
     model, parts = build_model()
     t = 3500.0
     while True:
@@ -23,8 +19,8 @@ def sample_one(seed):
         t += 200.0
 
 
-def collect_sample(n_runs, seed0):
-    pairs = [sample_one(seed0 + k) for k in range(n_runs)]
+def collect_sample(n_runs):
+    pairs = [sample_one() for _ in range(n_runs)]
     return np.array([p[0] for p in pairs]), np.array([p[1] for p in pairs], dtype=bool)
 
 
@@ -96,8 +92,8 @@ def verdict(chi2, critical):
     return "відхиляється" if chi2 >= critical else "не відхиляється"
 
 
-def identify(n_runs=8000, seed0=100000, plot_path="results/histogram_tx.png"):
-    x, interrupted = collect_sample(n_runs, seed0)
+def identify(n_runs=8000, plot_path="results/histogram_tx.png"):
+    x, interrupted = collect_sample(n_runs)
     a, b = PARAMS["tx"][0] - PARAMS["tx"][1], PARAMS["tx"][0] + PARAMS["tx"][1]
     k = sturges(len(x))
     print(f"Масив: {len(x)} значень (по одному з кожного запуску), середнє {x.mean():.3f} с, σ {x.std(ddof=1):.3f} с")
@@ -108,6 +104,10 @@ def identify(n_runs=8000, seed0=100000, plot_path="results/histogram_tx.png"):
           f"χ² = {chi2:.1f}, критичне {crit:.1f} (k = {k}, ступенів вільності {df}), {verdict(chi2, crit)}")
 
     p_int = float(interrupted.mean())
+    xi = x[interrupted]
+    half = stats.t.ppf(0.975, len(xi) - 1) * xi.std(ddof=1) / len(xi) ** 0.5
+    print(f"Перервані повідомлення в масиві: {len(xi)}, середній час {xi.mean():.2f} ± {half:.2f} с, "
+          f"неперервані: середнє {x[~interrupted].mean():.3f} с")
     grid, dens, g_cdf = interrupted_distribution()
     chi2, df, crit = chi2_test(x, mixture_cdf(p_int, a, b, g_cdf), 3.0, 25.0, k, 1)
     print(f"Гіпотеза 2, суміш (частка перерваних {p_int:.3f}, unif({a:.0f}; {b:.0f})): "
